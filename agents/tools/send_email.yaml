@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: Email Sending API
+  description: API for sending an email message using a manual trigger.
+  version: 1.0.0
+servers:
+  - url: "[URL_FOR_SEND_EMAIL_API]"
+paths:
+  /:
+    post:
+      operationId: sendEmail
+      summary: Send an Email
+      description: Sends an email message with a subject and body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  description: The subject of the email.
+                message:
+                  type: string
+                  description: The email body.

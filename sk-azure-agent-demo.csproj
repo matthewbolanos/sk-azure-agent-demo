@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>sk_azure_agent_demo</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <noWarn>SKEXP0080;SKEXP0110</noWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.AI.Projects" Version="1.0.0-beta.3" />
+    <PackageReference Include="Azure.Identity" Version="1.13.2" />
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.36.1" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.AzureAI" Version="1.36.1-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.36.1-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Process.Abstractions" Version="1.37.0-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Process.Core" Version="1.37.0-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Process.LocalRuntime" Version="1.37.0-alpha" />
+    <PackageReference Include="Polly" Version="8.5.2" />
+  </ItemGroup>
+
+</Project>
