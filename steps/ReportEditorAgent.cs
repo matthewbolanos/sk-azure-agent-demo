@@ -21,7 +21,7 @@ public sealed class ReportEditorAgent(AzureAIClientProvider clientProvider) : Ke
         Env.Load();
 
         Agent definition = await agentsClient.GetAgentAsync(Environment.GetEnvironmentVariable("EDITOR_AGENT_ID"));
-        AzureAIAgent agent = new(definition, clientProvider){Kernel = new Kernel()};
+        AzureAIAgent agent = new(definition, clientProvider) { Kernel = new Kernel() };
         KernelPlugin approvalPlugin = KernelPluginFactory.CreateFromObject(new ApprovalTool(agentsClient, context, threadId));
         agent.Kernel.Plugins.Add(approvalPlugin);
 
@@ -32,11 +32,19 @@ public sealed class ReportEditorAgent(AzureAIClientProvider clientProvider) : Ke
         Console.ResetColor();
         Console.WriteLine();
 
-        await foreach (StreamingChatMessageContent response in agent.InvokeStreamingAsync(threadId))
+        try
         {
-            Console.Write(response.Content);
+            await foreach (StreamingChatMessageContent response in agent.InvokeStreamingAsync(threadId))
+            {
+                Console.Write(response.Content);
+            }
+            Console.WriteLine();
         }
-        Console.WriteLine();
+        catch (System.Exception e)
+        {
+            Console.WriteLine(e.Message);
+            throw;
+        }
 
         return threadId;
     }
@@ -49,15 +57,24 @@ public sealed class ReportEditorAgent(AzureAIClientProvider clientProvider) : Ke
         [KernelFunction("Rejected")]
         async public Task RejectedAsync(
             [Description("The reason why the report was rejected")] string reason
-        ) {
+        )
+        {
             ThreadRun run = (await agentsClient.GetRunsAsync(threadId, 1, ListSortOrder.Descending)).Value.FirstOrDefault()!;
             await agentsClient.CancelRunAsync(threadId, run.Id);
-            
-            // poll the thread until the run is cancelled
-            while (run.Status != RunStatus.Cancelled)
+
+            try
             {
-                run = (await agentsClient.GetRunAsync(threadId, run.Id)).Value;
-                await Task.Delay(1000);
+                // poll the thread until the run is cancelled
+                while (run.Status != RunStatus.Cancelled)
+                {
+                    run = (await agentsClient.GetRunAsync(threadId, run.Id)).Value;
+                    await Task.Delay(1000);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Console.WriteLine(e.Message);
+                throw;
             }
 
             Console.ForegroundColor = ConsoleColor.Red;
@@ -81,15 +98,24 @@ public sealed class ReportEditorAgent(AzureAIClientProvider clientProvider) : Ke
         [KernelFunction("Approved")]
         async public Task ApprovedAsync(
             [Description("The reason why the report was approved")] string reason
-        ) {
+        )
+        {
             ThreadRun run = (await agentsClient.GetRunsAsync(threadId, 1, ListSortOrder.Descending)).Value.FirstOrDefault()!;
             await agentsClient.CancelRunAsync(threadId, run.Id);
-            
-            // poll the thread until the run is cancelled
-            while (run.Status != RunStatus.Cancelled)
+
+            try
             {
-                run = (await agentsClient.GetRunAsync(threadId, run.Id)).Value;
-                await Task.Delay(1000);
+                // poll the thread until the run is cancelled
+                while (run.Status != RunStatus.Cancelled)
+                {
+                    run = (await agentsClient.GetRunAsync(threadId, run.Id)).Value;
+                    await Task.Delay(1000);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Console.WriteLine(e.Message);
+                throw;
             }
 
             Console.ForegroundColor = ConsoleColor.Green;
@@ -100,5 +126,5 @@ public sealed class ReportEditorAgent(AzureAIClientProvider clientProvider) : Ke
             await context.EmitEventAsync(new KernelProcessEvent { Id = ProcessEvents.Approved, Data = threadId });
         }
     }
-    
+
 }
