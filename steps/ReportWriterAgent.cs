@@ -21,7 +21,7 @@ public sealed class ReportWriterAgent(AzureAIClientProvider clientProvider) : Ke
         Env.Load();
 
         Agent definition = await agentsClient.GetAgentAsync(Environment.GetEnvironmentVariable("WRITER_AGENT_ID"));
-        AzureAIAgent agent = new(definition, clientProvider){Kernel = new Kernel()};
+        AzureAIAgent agent = new(definition, clientProvider) { Kernel = new Kernel() };
         KernelPlugin plugin = KernelPluginFactory.CreateFromObject(new Help(agentsClient, context, threadId));
         agent.Kernel.Plugins.Add(plugin);
 
@@ -32,12 +32,21 @@ public sealed class ReportWriterAgent(AzureAIClientProvider clientProvider) : Ke
         Console.ResetColor();
         Console.WriteLine();
 
-        await foreach (StreamingChatMessageContent response in agent.InvokeStreamingAsync(threadId))
+        try
         {
-            Console.Write(response.Content);
-        }
-        Console.WriteLine();
+            await foreach (StreamingChatMessageContent response in agent.InvokeStreamingAsync(threadId))
+            {
+                Console.Write(response.Content);
+            }
+            Console.WriteLine();
 
+        }
+        catch (System.Exception e)
+        {
+            Console.WriteLine(e.Message);
+            throw;
+        }
+        
         return threadId;
     }
     private sealed class Help(AgentsClient agentsClient, KernelProcessStepContext context, string threadId)
@@ -48,15 +57,25 @@ public sealed class ReportWriterAgent(AzureAIClientProvider clientProvider) : Ke
         [KernelFunction("NeedMoreResearch"), Description("Call if you need more research to be performed")]
         async public Task NeedMoreResearchAsync(
             [Description("A description of the research required")] string researchNeeded
-        ) {
+        )
+        {
             ThreadRun run = (await agentsClient.GetRunsAsync(threadId, 1, ListSortOrder.Descending)).Value.FirstOrDefault()!;
             await agentsClient.CancelRunAsync(threadId, run.Id);
-            
-            // poll the thread until the run is cancelled
-            while (run.Status != RunStatus.Cancelled)
+
+            try
             {
-                run = (await agentsClient.GetRunAsync(threadId, run.Id)).Value;
-                await Task.Delay(1000);
+                // poll the thread until the run is cancelled
+                while (run.Status != RunStatus.Cancelled)
+                {
+                    run = (await agentsClient.GetRunAsync(threadId, run.Id)).Value;
+                    await Task.Delay(1000);
+                }
+
+            }
+            catch (System.Exception e)
+            {
+                Console.WriteLine(e.Message);
+                throw;
             }
 
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -72,5 +91,5 @@ public sealed class ReportWriterAgent(AzureAIClientProvider clientProvider) : Ke
             await context.EmitEventAsync(new KernelProcessEvent { Id = ProcessEvents.NeedMoreData, Data = threadId });
         }
     }
-    
+
 }
